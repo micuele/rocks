@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: MPL-2.0
+# Pushing a tag vX.Y.Z (matching Cargo.toml) tests, builds the .deb, .rpm and
+# Arch package in parallel, and publishes them as a GitHub release.
+# Run it manually (Actions > Release > Run workflow) to get the packages as
+# artifacts without publishing anything.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  version:
+    name: Check tag matches version
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          test "${GITHUB_REF_NAME}" = "v${version}" || {
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match Cargo.toml version ${version}"; exit 1; }
+
+  deb:
+    uses: ./.github/workflows/ci.yml
+
+  rpm:
+    name: Build .rpm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Oldest supported Fedora, so the package also installs on newer releases.
+    container: fedora:43
+    steps:
+      - name: Install build packages
+        run: >
+          dnf -y -q install --setopt=install_weak_deps=False
+          git tar zstd rpm-build cargo gcc python3
+          'pkgconfig(gtk4)' 'pkgconfig(libadwaita-1)' 'pkgconfig(epoxy)' 'pkgconfig(fontconfig)'
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build package
+        run: rpmbuild -bb --build-in-place --define "_rpmdir $PWD/dist" packaging/rpm/rocks.spec
+      - name: Install and smoke test
+        run: |
+          dnf -y -q install dist/*/rocks-*.rpm
+          rocks --version
+          rocks-capture --help >/dev/null
+      - uses: actions/upload-artifact@v5
+        with:
+          name: rpm
+          path: dist/*/rocks-*.rpm
+          retention-days: 14
+          if-no-files-found: error
+
+  arch:
+    name: Build Arch package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: archlinux:base-devel
+    steps:
+      - name: Install build packages
+        run: pacman -Syu --noconfirm --needed git rust gtk4 libadwaita libepoxy python
+      - uses: actions/checkout@v5
+      # Keep cargo's home in the workspace so the unprivileged builder can use the cache.
+      - run: echo "CARGO_HOME=$GITHUB_WORKSPACE/.cargo-home" >> "$GITHUB_ENV"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build package
+        # makepkg refuses to run as root.
+        run: |
+          useradd -m builder
+          mkdir -p dist "$CARGO_HOME"
+          chown -R builder "$GITHUB_WORKSPACE"
+          cd packaging/arch
+          su builder -c "CARGO_HOME='$CARGO_HOME' CARGO_TARGET_DIR='$GITHUB_WORKSPACE/target' PKGDEST='$GITHUB_WORKSPACE/dist' makepkg --noconfirm"
+      - name: Install and smoke test
+        run: |
+          pacman -U --noconfirm dist/rocks-*.pkg.tar.zst
+          rocks --version
+          rocks-capture --help >/dev/null
+      - uses: actions/upload-artifact@v5
+        with:
+          name: arch
+          path: dist/rocks-*.pkg.tar.zst
+          retention-days: 14
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    if: github.ref_type == 'tag'
+    needs: [version, deb, rpm, arch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' \) -exec mv {} . \;
+          sha256sum *.deb *.rpm *.pkg.tar.zst > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes \
+            *.deb *.rpm *.pkg.tar.zst SHA256SUMS

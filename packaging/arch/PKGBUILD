@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: MPL-2.0
+# Maintainer: Michele Qirici <51047047+micuele@users.noreply.github.com>
+#
+# Builds the checkout this PKGBUILD lives in:
+#   cd packaging/arch && makepkg -si
+pkgname=rocks
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Screenshot annotation with numbered comments"
+arch=(x86_64 aarch64)
+url="https://github.com/micuele/rocks"
+license=(MPL-2.0)
+depends=(gtk4 libadwaita libepoxy glib2 gdk-pixbuf2 gcc-libs glibc python hicolor-icon-theme)
+makedepends=(cargo)
+optdepends=(
+  'spectacle: capture on KDE'
+  'grim: capture on wlroots Wayland (Sway, Hyprland)'
+  'gnome-screenshot: capture on X11'
+  'imagemagick: capture on X11'
+  'python-dbus: rocks-setup-kde Print Screen binding'
+)
+options=(!debug)
+
+_checkout() {
+  cd "$startdir/../.."
+}
+
+prepare() {
+  _checkout
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  _checkout
+  # A caller (such as CI) may share a cached target directory.
+  export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$srcdir/target}"
+  cargo build --frozen --release
+}
+
+package() {
+  _checkout
+  python install.py --prefix /usr --destdir "$pkgdir" "${CARGO_TARGET_DIR:-$srcdir/target}/release/rocks"
+}

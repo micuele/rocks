@@ -87,6 +87,16 @@ def kde_monitors(filename):
         return ""
 
 
+def find_editor(environ, available=shutil.which):
+    """Launchers set ROCKS_EDITOR to their install's editor; fall back to PATH."""
+    if environ.get("ROCKS_EDITOR"):
+        return environ["ROCKS_EDITOR"]
+    editor = available("rocks")
+    if not editor:
+        raise RuntimeError("Cannot find the rocks editor. Reinstall rocks or set ROCKS_EDITOR.")
+    return editor
+
+
 def main():
     if not sys.platform.startswith("linux"):
         raise RuntimeError("rocks currently supports Linux only.")
@@ -110,7 +120,7 @@ def main():
             wait_png(filename)
             env = dict(os.environ)
             env["ROCKS_MONITORS"] = kde_monitors(filename) if backend == "spectacle" else ""
-            editor = os.environ.get("ROCKS_EDITOR", str(Path.home()/".local/bin/rocks"))
+            editor = find_editor(os.environ)
             subprocess.run([editor, "--config", str(Path(__file__).resolve().with_name("config.toml")), "--filename", str(filename)], env=env, check=True)
 
 

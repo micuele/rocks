@@ -43,6 +43,12 @@ class CaptureTests(unittest.TestCase):
         with patch('capture.subprocess.check_output', side_effect=FileNotFoundError):
             self.assertEqual(capture.kde_monitors(Path('/unused.png')), '')
 
+    def test_editor_comes_from_launcher_then_path(self):
+        self.assertEqual(capture.find_editor({'ROCKS_EDITOR': '/opt/rocks'}, self.available('rocks')), '/opt/rocks')
+        self.assertEqual(capture.find_editor({}, lambda name: '/usr/bin/rocks' if name == 'rocks' else None), '/usr/bin/rocks')
+        with self.assertRaises(RuntimeError):
+            capture.find_editor({}, self.available())
+
 
 if __name__ == '__main__':
     unittest.main()

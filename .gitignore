@@ -19,3 +19,6 @@ target/
 
 __pycache__/
 *.pyc
+
+# Package build output
+dist/

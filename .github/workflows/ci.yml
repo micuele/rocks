@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: MPL-2.0
+# Tests every push and pull request on Ubuntu 22.04, the oldest supported GTK
+# stack, and builds the .deb from the same compile. release.yml reuses this job.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "LICENSE"]
+  pull_request:
+    paths-ignore: ["**.md", "docs/**", "LICENSE"]
+  workflow_call:
+
+concurrency:
+  # github.workflow is the caller's name when release.yml reuses this file,
+  # so a release never cancels (or is cancelled by) a branch run.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  test:
+    name: Test and build .deb
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: ubuntu:22.04
+    steps:
+      - name: Install system packages
+        run: |
+          apt-get update -q
+          apt-get install -y -q --no-install-recommends \
+            ca-certificates curl git gcc libc6-dev pkg-config dpkg-dev file zstd \
+            libgtk-4-dev libadwaita-1-dev libepoxy-dev libfontconfig1-dev \
+            python3 xvfb xauth xdotool xclip libgl1-mesa-dri
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt --check
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ubuntu-22.04
+          # Only main writes the cache; PRs and tags reuse it.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build
+        run: cargo build --release --locked
+      - name: Rust tests
+        run: cargo test --release --locked
+      - name: Python tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Editor workflow tests
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb_run() { xvfb-run -a -s '-screen 0 1280x900x24' "$@"; }
+          xvfb_run python3 test-workflow.py target/release/rocks
+          ROCKS_TEST_RIGHT_CROP=1 xvfb_run python3 test-workflow.py target/release/rocks
+          ROCKS_MONITORS='0,0,20,600;20,0,780,600' ROCKS_EXPECT_SIZE='780,600' \
+            xvfb_run python3 test-workflow.py target/release/rocks
+      - name: Build .deb
+        run: packaging/deb/build-deb.sh target/release/rocks dist
+      - uses: actions/upload-artifact@v5
+        with:
+          name: deb
+          path: dist/*.deb
+          retention-days: 14
+          if-no-files-found: error

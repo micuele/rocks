@@ -5,14 +5,40 @@ stone icon as searching.rocks. This is an independent Rust/GTK application,
 forked from Satty v0.22.0 under MPL-2.0. See [NOTICE.md](NOTICE.md) and [LICENSE](LICENSE).
 It has no searching.rocks, Electron, database or Node.js dependency.
 
-## Build and install
+## Install a package
 
-Install Rust and development packages for GTK4, libadwaita, epoxy and fontconfig,
-plus a C compiler, pkg-config and the OpenGL runtime. On Fedora the development
+Each [GitHub release](https://github.com/micuele/rocks/releases) has ready-made
+x86_64 packages:
+
+| Distribution | Package | Install |
+|---|---|---|
+| Ubuntu 22.04+, Debian 12+, Mint 21+ | `rocks_<version>_amd64.deb` | `sudo apt install ./rocks_*.deb` |
+| Fedora 43+ | `rocks-<version>-1.fc43.x86_64.rpm` | `sudo dnf install ./rocks-*.rpm` |
+| Arch, Manjaro, EndeavourOS | `rocks-<version>-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./rocks-*.pkg.tar.zst` |
+
+On Arch you can also build the package from a checkout:
+
+```sh
+git clone https://github.com/micuele/rocks && cd rocks/packaging/arch && makepkg -si
+```
+
+Packages install `rocks`, `rocks-capture` and `rocks-setup-kde` into `/usr/bin`
+and add **rocks** to the application menu. They do not update themselves:
+install the next release's package to upgrade. Also install a capture command
+for your desktop (see [Capture support](#capture-support)). On KDE, bind Print
+Screen for your user with `rocks-setup-kde` (needs `python3-dbus`/`python-dbus`);
+`rocks-setup-kde --restore` gives it back to Spectacle.
+
+## Build and install from source
+
+Install Rust 1.85 or newer (for example with [rustup](https://rustup.rs)) and
+development packages for GTK4, libadwaita, epoxy and fontconfig, plus a C
+compiler, pkg-config and the OpenGL runtime. On Fedora the development
 packages are `gtk4-devel libadwaita-devel libepoxy-devel fontconfig-devel gcc
 pkgconf-pkg-config`; on Debian-based systems they are `libgtk-4-dev
-libadwaita-1-dev libepoxy-dev libfontconfig1-dev build-essential pkg-config`.
-A recent distribution is needed for this GTK stack.
+libadwaita-1-dev libepoxy-dev libfontconfig1-dev build-essential pkg-config`;
+on Arch they are `base-devel gtk4 libadwaita libepoxy`. GTK 4.6 and
+libadwaita 1.1 (Ubuntu 22.04 or newer) are the minimum.
 
 ```sh
 cargo build --release --locked
@@ -20,11 +46,13 @@ python3 install.py target/release/rocks
 ```
 
 This installs the editor as `~/.local/bin/rocks`, the capture command as
-`~/.local/bin/rocks-capture`, and the config, capture script, license and notice
-under `$XDG_DATA_HOME/rocks` (default `~/.local/share/rocks`). The application
-menu entry is **rocks**, using the stone icon. Add `~/.local/bin` to PATH for
-terminal use. Installation copies everything needed; moving this checkout does
-not break the installed application. Reinstall after changing the code/config.
+`~/.local/bin/rocks-capture`, `rocks-setup-kde`, and the config, capture script,
+license and notice under `$XDG_DATA_HOME/rocks` (default `~/.local/share/rocks`).
+The application menu entry is **rocks**, using the stone icon. Add `~/.local/bin`
+to PATH for terminal use. Installation copies everything needed; moving this
+checkout does not break the installed application. Reinstall after changing the
+code/config. Packagers use `python3 install.py --prefix /usr --destdir STAGING
+BINARY`, which only writes files below `STAGING`.
 
 On KDE, install and assign Print Screen with the system Python and its `dbus`
 module:
@@ -35,10 +63,11 @@ module:
 /usr/bin/python3 install-kde.py --restore
 ```
 
-The KDE installer migrates the previous searching.rocks/Satty shortcut, retaining
-its original Spectacle bindings for restoration. Other Spectacle shortcuts are
-preserved. The previous `~/.local/bin/satty` binary is left intact for other uses.
-On other desktops, bind Print Screen to the absolute path of `rocks-capture`
+The KDE installer (and `rocks-setup-kde`, which only changes the shortcut)
+migrates the previous searching.rocks/Satty shortcut, retaining its original
+Spectacle bindings for restoration. Other Spectacle shortcuts are preserved.
+The previous `~/.local/bin/satty` binary is left intact for other uses.
+On other desktops, bind Print Screen to `rocks-capture` (by absolute path)
 using that desktop's shortcut settings.
 
 ## Capture support
@@ -130,6 +159,26 @@ podman stop rocks-build
 ```
 
 The container is a local convenience, not a prerequisite or published image.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs all of the above on every push
+to `main` and on pull requests, on Ubuntu 22.04 (the oldest supported GTK), and
+attaches the resulting `.deb` to the run as an artifact.
+
+## Releases
+
+1. Set the new version in `Cargo.toml` (then `cargo build` to update
+   `Cargo.lock`), `packaging/arch/PKGBUILD` (`pkgver`, reset `pkgrel=1`) and
+   `packaging/rpm/rocks.spec` (`Version`). A unit test fails if they differ.
+2. Commit, then tag and push: `git tag v0.2.0 && git push origin main v0.2.0`.
+
+`.github/workflows/release.yml` then runs the tests, builds the `.deb`
+(Ubuntu 22.04), `.rpm` (Fedora 43) and Arch package in parallel, installs each
+one as a smoke test, and publishes a GitHub release with the packages and
+`SHA256SUMS`. Running the Release workflow manually from the Actions tab builds
+the same packages as artifacts without publishing. Packaging recipes live in
+`packaging/`; all three stage files with `install.py --prefix /usr`, so the
+installed layout is defined once.
+
 The source is hosted at https://github.com/micuele/rocks (private for now).
 Release distribution must include the notices and tell recipients how to obtain
 the matching modified source; see [NOTICE.md](NOTICE.md). No macOS/Windows support,
