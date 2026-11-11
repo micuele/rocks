@@ -1,0 +1,102 @@
+@define-color accent_color #42c78b;
+@define-color accent_bg_color #42c78b;
+@define-color accent_fg_color #121212;
+@define-color window_bg_color #181818;
+@define-color window_fg_color #ededed;
+@define-color headerbar_bg_color #1a1a1a;
+@define-color headerbar_fg_color #ededed;
+
+.root {
+    min-width: 65rem;
+    min-height: 10rem;
+}
+.outer_box { background-color: @headerbar_bg_color; }
+.inner_box { background-color: #000000; }
+
+.toolbar, .comment-dialog {
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    color: #ededed;
+    background: #1a1a1a;
+    border: 1px solid #383838;
+}
+.toolbar { padding: 6px; }
+.outer_box .toolbar-top { border-radius: 0; }
+.overlay .toolbar-top { border-radius: 8px; margin: 12px; }
+
+.toolbar button {
+    -gtk-icon-size: 18px;
+    color: #e2e2e2;
+    background: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+    outline: none;
+    margin: 2px;
+    transition: none;
+}
+.toolbar button:hover { background: #292929; color: #ffffff; }
+.toolbar button:checked { background: #343434; color: #ffffff; }
+.toolbar button:checked:hover { background: #3b3b3b; }
+.toolbar button:active { background: #444444; }
+.toolbar button.editing { color: @accent_color; }
+.toolbar separator { background: #383838; margin: 4px 5px; }
+
+.comment-dialog { border-radius: 8px; padding: 0; }
+.comment-dialog .comment-content { padding: 10px; }
+.comment-dialog .comment-heading {
+    color: #ededed;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 2px 0 10px 4px;
+}
+.comment-dialog .comment-input {
+    background: #222222;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    box-shadow: none;
+    outline: none;
+}
+.comment-dialog textview, .comment-dialog textview text {
+    background: #222222;
+    color: #ededed;
+    caret-color: #ededed;
+    font-size: 14px;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+.comment-dialog textview text selection {
+    background: #454545;
+    color: #ffffff;
+}
+.comment-dialog .comment-placeholder { color: #999999; margin: 12px; font-size: 14px; }
+.comment-dialog .comment-hint { color: #a0a0a0; font-size: 11px; margin: 8px 4px 2px; }
+.comment-dialog button.comment-close {
+    color: #a0a0a0;
+    background: transparent;
+    background-image: none;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+    box-shadow: none;
+    padding: 2px;
+    margin: 0;
+    min-width: 20px;
+    min-height: 20px;
+    transition: none;
+}
+.comment-dialog button.comment-close:hover {
+    color: #ededed;
+    background: #292929;
+}
+.comment-dialog button.comment-close:focus-visible {
+    outline: 1px solid #888888;
+}
+.toast {
+    color: #f9f9f9;
+    background-color: #00000099;
+    border-radius: 6px;
+    margin-top: 50px;
+}

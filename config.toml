@@ -1,0 +1,7 @@
+[general]
+fullscreen = "all"
+initial-tool = "rectangle"
+corner-roundness = 0
+early-exit = ["copy"]
+actions-on-enter = ["save-to-clipboard"]
+actions-on-escape = ["exit"]
