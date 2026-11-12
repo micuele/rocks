@@ -15,13 +15,17 @@ def run(*args):
     return subprocess.check_output(args, timeout=10)
 
 
-def window(pattern):
-    for _ in range(100):
+def window(pattern, seconds=30, required=True):
+    # Generous: software OpenGL on a busy CI runner can take seconds per frame.
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
         result = subprocess.run(["xdotool", "search", "--onlyvisible", "--name", pattern], capture_output=True)
         if result.returncode == 0:
             return result.stdout.decode().splitlines()[-1]
         time.sleep(0.1)
-    raise AssertionError(f"Window did not appear: {pattern}")
+    if required:
+        raise AssertionError(f"Window did not appear: {pattern}")
+    return None
 
 
 def key(*keys):
@@ -38,8 +42,15 @@ def drag(editor, x, y, button=1, dx=170, dy=95):
 
 
 def region(editor, number, text):
-    drag(editor, 370 + number * 25, 130 + number * 60)
-    dialog = window(f"Region {number}")
+    # A just-mapped editor may still be rendering its first frame and drop the
+    # drag; repeat it rather than fail. No region exists until the dialog opens.
+    for _ in range(3):
+        drag(editor, 370 + number * 25, 130 + number * 60)
+        dialog = window(f"Region {number}", seconds=10, required=False)
+        if dialog:
+            break
+    else:
+        raise AssertionError(f"Region {number} dialog did not appear")
     run("xdotool", "windowfocus", "--sync", dialog)
     run("xdotool", "type", "--clearmodifiers", text)
     key("Return")
