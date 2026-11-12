@@ -4,7 +4,7 @@
 
 # rocks
 
-**Screenshot annotation for Linux, built for feedback.**<br>
+**Screenshot annotation for Linux, built for agents.**<br>
 Mark regions, number them, comment, and paste the image *and* your notes anywhere.
 
 [![License](https://img.shields.io/badge/License-MPL--2.0-007ec6)](LICENSE)
@@ -27,7 +27,6 @@ Mark regions, number them, comment, and paste the image *and* your notes anywher
 - **AI-chat ready** — pasting into a chat attaches the image *and* a Markdown file with your comments, so they're read as text.
 - **Fast by design** — opens fullscreen on Print Screen, Enter copies and closes, Esc cancels.
 - **Crop without switching tools** — right-drag to crop; multi-monitor captures auto-crop to your screen on KDE.
-- **Native** — a small Rust/GTK4 app with no Electron or background service.
 
 ## 📦 Install
 
