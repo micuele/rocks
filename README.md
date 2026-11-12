@@ -22,11 +22,17 @@ Mark regions, number them, comment, and paste the image *and* your notes anywher
 
 ## ✨ Features
 
-- **Numbered regions** — drag a rectangle or arrow, type a comment; numbers stay in sync through edits and undo.
-- **One copy, every format** — the clipboard holds the PNG, a numbered text list and HTML at once.
-- **AI-chat ready** — pasting into a chat attaches the image *and* a Markdown file with your comments, so they're read as text.
-- **Fast by design** — opens fullscreen on Print Screen, Enter copies and closes, Esc cancels.
-- **Crop without switching tools** — right-drag to crop; multi-monitor captures auto-crop to your screen on KDE.
+Show your agent what to change instead of describing it. One screenshot becomes a ready-to-send prompt.
+
+| 1 · Capture | 2 · Mark | 3 · Prompt |
+|:---:|:---:|:---:|
+| Press <kbd>Print Screen</kbd> | Drag a region, type what should change | <kbd>Enter</kbd> copies; paste into your agent |
+
+- **📸 Screenshot to prompt in seconds** — no saving files, no switching apps, no retyping what's on screen.
+- **🔢 Numbered instructions the agent can follow** — every region gets a number and its comment ("1. Fix the header", "2. Align this button"), so each change points at an exact spot.
+- **📝 Read as text, not guessed from pixels** — pasting attaches the screenshot *and* a Markdown file with your numbered comments, so the agent gets your instructions word for word.
+- **🎯 Send only what matters** — right-drag to crop to the relevant part; multi-monitor captures auto-crop to your screen on KDE.
+- **📋 Works beyond AI chats** — the same copy holds PNG, numbered text and HTML, so issue trackers, docs and messengers get the best format too.
 
 ## 📦 Install
 
