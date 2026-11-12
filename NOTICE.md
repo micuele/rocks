@@ -22,8 +22,6 @@ at https://github.com/micuele/rocks . Each release tag `vX.Y.Z` matches the
 repository alone does not contain our modifications. Anyone redistributing a
 rocks binary must make the matching source available to recipients (this
 repository and tag, or a source archive) and include this notice and `LICENSE`.
-The repository is currently private: make it public, or ship the source archive
-alongside the binary, before giving binaries to anyone without access to it.
 
 Upstream Satty tools and options that rocks does not use (text, blur, highlight,
 markers, ellipse, colour palette, shell completions and others) were removed.
